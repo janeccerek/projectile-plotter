@@ -34,14 +34,14 @@ def calculate_projectile(data, dt):
     y = h
 
     # korzystam z metody Eulera do numerycznego rozwiązania równania różniczkowego
-    while pos[1][ii-1] >= 0.0:
+    while pos[1][ii - 1] >= 0.0:
         force_x = B * v_x * v
-        force_y = g + B * v_y * v
+        force_y = m * g + B * v_y * v
         x = x + v_x * dt
         y = y + v_y * dt
         v_x = v_x - (force_x / m) * dt
         v_y = v_y - (force_y / m) * dt
-        v = np.sqrt(v_y**2 + v_x**2)
+        v = np.sqrt(v_y ** 2 + v_x ** 2)
         pos[0].append(x)
         pos[1].append(y)
         ii += 1
@@ -52,14 +52,16 @@ def calculate_projectile(data, dt):
 def optimize_interval(data):
     # Funkcja ma za zadanie zoptymalizować używane przy obliczaniu trajektorii dt tak, żeby animacja rysowała się
     # w sensownym czasie. Bez niej dla dużych wartości początkowych wykres rysuje się już niewygodnie długo.
+    # Problemu nie rozwiązuje zmniejszenie interwału, gdyż wszystko rozbija się o zbyt dużą tablicę współrzędnych
+    # punktu, co może poskutkować problemami dla bardzo dużych wartości początkowych.
     # Wpływa to na dokładność wyliczeń, ponieważ interwał dt zmienia się i czas spadku z tej samej wysokości dla
     # różnych wartości początkowych może się nieznacznie różnić. Co ważne, nie jest to duży rozrzut.
     dt = 0.01
-    for i in range(5):
+    for i in range(10):
         pos = calculate_projectile(data, dt)
         if len(pos[1]) < 400:
             dt /= 2
-        elif len(pos[1]) > 1000:
+        elif len(pos[1]) > 800:
             dt *= 2
         else:
             return dt
@@ -75,14 +77,18 @@ pos_list = calculate_projectile(data, interval)
 # deklaruję elementy wykresu wykorzystywane później do animacji: line jest krzywą zakreśloną przez ciało, point to
 # marker punktu, w którym w danej chwili znajduje się ciało, a time_text to licznik czasu
 fig = plt.subplots()
-plt.xlim(1.2*min(pos_list[0]), 1.2*max(pos_list[0]))
-plt.ylim(0, 1.2*max(pos_list[1]))
+plt.xlim(1.2 * min(pos_list[0]), 1.2 * max(pos_list[0]))
+plt.ylim(0, 1.2 * max(pos_list[1]))
 plt.xlabel("współrzędna x [m]")
 plt.ylabel("współrzędna y [m]")
+plt.grid()
 plt.title("rzut poziomy z oporem w zależności od $V^2$")
 line, = plt.plot([], [], color="green")
 point, = plt.plot([], [], marker="o", color="green")
-time_text = plt.annotate(0, xy=(1, 1), xytext=(1, 1))
+time_text = plt.annotate(0, xy=(1, 1), xytext=(-15, -15), fontsize=10,
+                         xycoords='axes fraction', textcoords='offset points',
+                         bbox=dict(facecolor='white', alpha=0.8),
+                         horizontalalignment='right', verticalalignment='top')
 xdata, ydata = [], []
 
 
@@ -107,6 +113,6 @@ def animate(i):
 
 
 # wywołanie animacji
-anim = animation.FuncAnimation(fig[0], animate, init_func=init, frames=len(pos_list[1]), interval=20/len(pos_list[1]),
+anim = animation.FuncAnimation(fig[0], animate, init_func=init, frames=len(pos_list[1]), interval=20 / len(pos_list[1]),
                                blit=True, repeat=False)
 plt.show()
